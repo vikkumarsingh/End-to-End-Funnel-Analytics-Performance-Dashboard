@@ -1,0 +1,46 @@
+SQL -> 1
+
+SELECT 
+    CAST(call_start_time AS DATE) AS date,
+    COUNT(DISTINCT lead_id) AS leads_attempted,
+    COUNT(call_id) AS total_outbound_calls,
+    COUNT(CASE WHEN call_status = 'connected' THEN call_id END) AS connected_calls
+FROM call_logs
+WHERE call_start_time >= '2025-09-01' 
+  AND call_start_time < '2025-10-01'
+GROUP BY CAST(call_start_time AS DATE)
+ORDER BY date;
+
+
+SQL -> 2
+
+WITH daily_agent_calls AS (
+    SELECT 
+        CAST(call_start_time AS DATE) AS date,
+        agent_id,
+        COUNT(call_id) AS outbound_calls
+    FROM call_logs
+    WHERE call_start_time >= '2025-09-01' 
+      AND call_start_time < '2025-10-01'
+    GROUP BY CAST(call_start_time AS DATE), agent_id
+)
+SELECT 
+    date,
+    COUNT(agent_id) AS active_agents_gt_10_calls
+FROM daily_agent_calls
+WHERE outbound_calls > 10
+GROUP BY date
+ORDER BY date;
+
+SQL -> 3
+
+SELECT 
+    DATE_FORMAT(created_date, '%Y-%m') AS lead_created_month,
+    cd_bucket,
+    COUNT(DISTINCT lead_id) AS total_leads,
+    COUNT(DISTINCT CASE WHEN is_qualified = 1 THEN lead_id END) AS qualified_leads,
+    COUNT(DISTINCT CASE WHEN is_login = 1 THEN lead_id END) AS logged_in_leads,
+    COUNT(DISTINCT CASE WHEN is_disbursed = 1 THEN lead_id END) AS disbursed_leads
+FROM leads
+GROUP BY DATE_FORMAT(created_date, '%Y-%m'), cd_bucket
+ORDER BY lead_created_month, cd_bucket;
